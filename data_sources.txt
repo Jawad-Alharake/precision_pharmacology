@@ -1,0 +1,14 @@
+URL Link to the files downloaded and used in this project:
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE92742
+
+File 1: The Primary Expression Matrix
+GCTX_FILE (~20GB) = 'GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx'
+
+File 2: The Gene Identity Mapping
+GENE_METADATA (~200KB) = 'GSE92742_Broad_LINCS_gene_info.txt.gz'
+
+File 3: The Experiment Metadata
+SIG_METADATA (~11MB) = 'GSE92742_Broad_LINCS_sig_info.txt.gz'
+
+File 4: The Chemical Structure Metadata
+PERT_INFO_FILE (~5MB) = 'GSE92742_Broad_LINCS_pert_info.txt.gz'

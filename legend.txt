@@ -1,0 +1,63 @@
+Legend & Glossary of Terms
+
+1. Biological Institutions (Research Origins)
+
+    BRD: Broad Institute Research Drug (An internal identification code used for proprietary compounds developed at the Broad Institute in Boston).
+
+    KU: University of Kansas.
+
+    VU: Vanderbilt University (Nashville).
+
+2. Experimental Design & Treatment
+
+    mcf7: Michigan Cancer Foundation-7 (A standard metastatic breast cancer cell line).
+
+    MoA: Mechanism of Action (The biological "how" of a drug; how it interacts with the body).
+
+    pert: Perturbagen (Any substance or genetic modification used to disturb a cell).
+
+    trt_cp: Treatment Compound (A physical drug or small molecule).
+
+    trt_oe: Treatment Overexpression (Genetic engineering to artificially increase a gene's activity).
+
+    trt_sh: Treatment shRNA (Genetic engineering to artificially "silence" or turn off a gene's activity).
+
+3. Genomic & Platform Definitions
+
+    BING: Best Inferred Genes (A subset of ~9,000 computationally predicted genes that have a very high confidence score).
+
+    INF: Inferred Genes (Genes that are not physically measured, but mathematically predicted).
+
+    LINCS L1000: Library of Integrated Network-based Cellular Signatures Landmark 1000.
+
+    LM: Landmark Genes (The 978 core genes physically measured by the assay).
+
+    PR: Platform Resource (A standardized platform identifier).
+
+4. Data Structure & Metadata
+
+    cids: Column IDs (Identifies the specific drug experiments or "signatures").
+
+    distil_id: Distilled Experiment (A unique ID assigned to an individual laboratory sample).
+
+    iname: Investigative Name (The laboratory or research name for a drug).
+
+    rids: Row IDs (Identifies the specific genes).
+
+    sig: Signature (The unique genetic "fingerprint" produced by an experiment).
+
+5. File Formats & Technical Identifiers
+
+    CID: Compound Identifier (The official, unique public database number assigned to a molecule by the NCBI PubChem database).
+
+    GCT: Gene Expression Dataset (A human-readable text format for matrix data).
+
+    GCTX: Gene Expression Dataset (A binary, high-performance format designed for massive datasets).
+
+    LXB: Luminex Binary (The raw data coming directly from the laboratory optical sensors).
+
+    MODZ: Moderated Z-score (A standardized score averaged across multiple replicate experiments to ensure accuracy).
+
+    QC: Quality Control.
+
+    SMILES: Simplified Molecular Input Line Entry System (A notation for describing the physical 3D structure of chemical molecules using short text strings).

@@ -1,0 +1,41 @@
+Here are 10 business questions, ranked by their strategic importance to a pharmaceutical or biotech company.
+
+**1. The "Golden" Question: Reversal of Disease Signatures**
+"Which drugs in our dataset show a gene expression profile that is the exact opposite of a specific Rare Disease signature?"
+*Why it's #1:* This is the core of drug repurposing. If a disease turns Genes A, B, and C "UP," we want a drug that turns them "DOWN." This provides an immediate list of candidates for clinical trials.
+
+**2. Mechanism of Action (MoA) Discovery**
+"For drugs with 'BRD' IDs (Broad Institute Research Drug or 'Broad ID', unknown compounds), can we group them with known drugs based on their gene signatures?"
+*Why it matters:* If an unknown compound has the same "signature" as a known FDA-approved kinase inhibitor, we can logically assume it works the same way. This saves years of lab research.
+
+**3. Safety and Toxicity Prediction**
+"Which compounds cause extreme 'off-target' activity in landmark genes associated with cell death or stress?"
+*Why it matters:* Even if a drug "fixes" a disease gene, if it also causes 50 other genes to go haywire (high Z-scores), it might be toxic. This helps "weed out" dangerous candidates early.
+
+**4. Drug Potency Benchmarking**
+"In MCF7 (Breast Cancer) cells, which drugs produce the highest magnitude Z-scores across the most landmark genes?"
+*Why it matters:* This identifies the "strongest" hitters. In business, a highly potent drug is often preferred because it can be given at lower, safer doses.
+
+**5. Identifying "Master Regulator" Genes**
+"Which landmark genes are most frequently affected (Z-score > 2) across all 14,000+ experiments?"
+*Why it matters:* This identifies the "vulnerable" parts of the cell's engine. If certain genes always react to drugs, they are likely "Master Regulators" and make for better drug targets.
+
+**6. Repurposing Efficiency (The "Low Hanging Fruit")**
+"How many already-approved FDA drugs (found in pert_iname) show high activity against genes involved in rare metabolic disorders?"
+*Why it matters:* Bringing a new drug to market costs billions. Repurposing an existing drug (whose safety is already proven) costs significantly less. This is a pure financial efficiency question.
+
+**7. Precision vs. Power: Specificity vs. Max Potency**
+"How do we identify 'Surgical' drug candidates that maximize potency while minimizing off-target effects?"
+*Why it matters:* In medicine, specificity is key. A "dirty drug" hits everything (side effects). A "clean drug" hits only the target. This question helps find highly selective therapies.
+
+**8. Dose-Response Validation (Internal QC)**
+"Do we see a consistent trend where higher confidence 'Signatures' correlate with known therapeutic classes?"
+*Why it matters:* This validates our data engineering. If the data shows that 'Statins' affect 'Cholesterol-related genes,' our database is reliable for making bigger business bets.
+
+**9. Genetic Fingerprinting**
+"What are the specific molecular 'fingerprints' of our top 10 candidates across the master regulatory genome?"
+*Why it matters:* In drug development, "similar" is not good enough. This visualization moves beyond general scores to reveal the precise genetic "on/off" switches for each candidate. It allows us to differentiate between drugs that might look identical in name but behave differently at the cellular level, ensuring we select the most effective molecular structure for the next phase.
+
+**10. Final Recommendation**
+"Which candidates represent our final 'Precision Lead' recommendations for clinical development, and which cellular functions do they reset?"
+*Why it matters:* This is the bridge between data science and medicine. By translating thousands of gene expression changes into high-level cellular functions (like 'Protein Degradation' or 'Cell Cycle Growth'), we provide a clear roadmap for clinical trials. It tells stakeholders exactly what the drug does and which disease area it is most likely to cure, transforming raw data into a multibillion-dollar strategic asset.
