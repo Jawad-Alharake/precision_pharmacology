@@ -1,50 +1,48 @@
 # Precision Pharmacology: Automated Molecular Identification
 
 ## 🧬 Project Overview
-The "Precision Pharmacology" pipeline is an end-to-end data science and data engineering project designed to accelerate drug repurposing. 
-
-Mining the Broad Institute's massive **LINCS L1000 Dataset** (over 1 million genetic interactions), this project architected a local relational database to isolate highly specific, non-toxic "Precision Leads" that reverse disease signatures. Finally, an automated web scraper dynamically queries global medical literature to verify the Intellectual Property (IP) status and research maturity of the discovered compounds.
+The "Precision Pharmacology" pipeline is an end-to-end data science and data engineering project designed to accelerate drug repurposing. Mining the Broad Institute's massive LINCS L1000 Dataset (over 1 million genetic interactions), this project architected a local relational database to isolate highly specific, non-toxic "Precision Leads" that reverse disease signatures. An automated web scraper dynamically queries global medical literature to verify the Intellectual Property (IP) status and research maturity of the discovered compounds. Finally, the pipeline conducts a temporal pharmacodynamic analysis to classify these finalists into distinct clinical profiles (e.g., acute vs. chronic treatments), providing a complete, investor-ready triage report.
 
 ## 🛠️ Technology Stack
-*   **Data Engineering:** Python, Pandas, Numpy
-*   **Database Architecture:** SQLite, Relational Schemas
-*   **Web Scraping & Automation:** Requests, BeautifulSoup
-*   **Data Visualization:** Matplotlib, Seaborn
+* **Data Engineering:** Python, Pandas, Numpy
+* **Database Architecture:** SQLite, Relational Schemas
+* **Web Scraping & Automation:** Requests, BeautifulSoup
+* **Data Visualization:** Matplotlib, Seaborn
 
 ## 📂 Project Execution Instructions
 
 ### 1) Environment Setup & Data Download
-Due to GitHub's file size limits, the raw datasets are not hosted in this repository. Download the four primary datasets listed below from the **NCBI GEO repository (Accession: GSE92742)**. 
+Due to GitHub's file size limits, the raw datasets are not hosted in this repository. Download the four primary datasets listed below from the NCBI GEO repository (Accession: **GSE92742**). Ensure the following files are placed directly into the exact same directory as your `.ipynb` notebooks:
 
-Ensure the following files are placed directly into the exact same directory as your `.ipynb` notebooks:
-*   `GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx` *(Note: Ensure this is extracted if downloaded as an archive)*
-*   `GSE92742_Broad_LINCS_gene_info.txt.gz`
-*   `GSE92742_Broad_LINCS_sig_info.txt.gz`
-*   `GSE92742_Broad_LINCS_pert_info.txt.gz` *(Note: Ensure this is extracted if downloaded as an archive)*
-
----
+* `GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx` *(Note: Ensure this is extracted if downloaded as an archive)*
+* `GSE92742_Broad_LINCS_gene_info.txt.gz`
+* `GSE92742_Broad_LINCS_sig_info.txt.gz`
+* `GSE92742_Broad_LINCS_pert_info.txt.gz` *(Note: Ensure this is extracted if downloaded as an archive)*
 
 ### 2) Phase 1: Data Extraction & Dimensionality Reduction
-*   **Action:** Run the first notebook `phase_1.ipynb`.
-*   **Process:** Parses the massive `.gctx` and `.gz` metadata files, melts the wide data into a long format, and filters out biological noise (Z-scores between -2.0 and 2.0).
-*   **Expected Output:** Upon successful completion, two new CSV files will be generated in your directory: `lincs_compound_metadata.csv` and `lincs_genetic_signatures.csv`.
+* **Action:** Run the first notebook `phase_1.ipynb`.
+* **Process:** Parses the massive `.gctx` and `.gz` metadata files, melts the wide data into a long format, and filters out biological noise (Z-scores between -2.0 and 2.0).
+* **Expected Output:** Upon successful completion, two new CSV files will be generated in your directory: `lincs_compound_metadata.csv` and `lincs_genetic_signatures.csv`.
 
 ### 3) Phase 2: Relational Database Architecture
-*   **Action:** Run the second notebook `phase_2.ipynb`.
-*   **Process:** Ingests the cleaned CSVs and builds a fast, relational SQLite database, linking the biological identity of drugs to their genetic impact.
-*   **Expected Output:** A new database file named `precision_pharmacology.db` will appear in your directory.
+* **Action:** Run the second notebook `phase_2.ipynb`.
+* **Process:** Ingests the cleaned CSVs and builds a fast, relational SQLite database, linking the biological identity of drugs to their genetic impact.
+* **Expected Output:** A new database file named `precision_pharmacology.db` will appear in your directory.
 
 ### 4) Phase 3: Business Analytics & Insight Generation
-*   **Action:** Run the third notebook `phase_3.ipynb`.
-*   **Process:** The SQL engine queries the database to identify our top drug candidates based on potency and surgical specificity (Precision vs. Power). Generates a heat map visualization.
-*   **Expected Output:** Two new CSV files will be exported: `top_10_lead_summary.csv` (for executives) and `top_10_detailed_gene_hits.csv` (for the lab).
+* **Action:** Run the third notebook `phase_3.ipynb`.
+* **Process:** The SQL engine queries the database to identify our top drug candidates based on potency and surgical specificity (Precision vs. Power). Generates a heat map visualization.
+* **Expected Output:** Two new CSV files will be exported: `top_10_lead_summary.csv` (for executives) and `top_10_detailed_gene_hits.csv` (for the lab).
 
 ### 5) Phase 4: Literature Footprint & Risk Assessment
-*   **Action:** Run the fourth and final notebook `phase_4.ipynb`.
-*   **Process:** Deploys a custom `BeautifulSoup` bot to automatically scrape **PubMed**. It extracts publication data to prove whether the discovered leads are "Established Therapies" or untapped "Novel IP." 
-*   **Expected Output:** Generates a final comparative bar chart and outputs the ultimate project deliverable: `final_executive_lead_report.csv`.
+* **Action:** Run the fourth notebook `phase_4.ipynb`.
+* **Process:** Deploys a custom BeautifulSoup bot to automatically scrape PubMed. It extracts publication data to prove whether the discovered leads are "Established Therapies" or untapped "Novel IP."
+* **Expected Output:** Generates a final comparative bar chart and outputs the ultimate project deliverable: `final_executive_lead_report.csv`.
 
----
+### 6) Phase 5: Temporal Pharmacodynamics & Clinical Triaging
+* **Action:** Run the fifth and final notebook `phase_5.ipynb`.
+* **Process:** Integrates time-series metadata (6h vs. 24h) to evaluate how drug efficacy and specificity mature over time. Classifies the top 10 precision leads into distinct clinical profiles (e.g., "Rapid Responders" for acute interventions vs. "Cascade Inducers" for systemic resets).
+* **Expected Output:** Generates an Executive Triage Report alongside two high-end visualizations: a Potency Maturation bar chart and a Biological Cascade slope graph.
 
 ## ⚖️ Data Provenance & Licensing
-All biological data used in this project is sourced from the **Library of Integrated Network-based Cellular Signatures (LINCS)**, generated by the Broad Institute and hosted by the NIH's National Center for Biotechnology Information (NCBI). It is open-access and publicly available for research purposes.
+All biological data used in this project is sourced from the Library of Integrated Network-based Cellular Signatures (LINCS), generated by the Broad Institute and hosted by the NIH's National Center for Biotechnology Information (NCBI). It is open-access and publicly available for research purposes.
