@@ -1,0 +1,46 @@
+# Data files (too large for GitHub)
+*.gctx
+*.gz
+*.gct
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Results and outputs
+results/
+outputs/
+*.csv
+*.xlsx
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Large files
+*.ppt
+*.pptx
+*.pdf
