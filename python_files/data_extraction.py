@@ -3,18 +3,20 @@ Phase 1: Data Extraction & Dimensionality Reduction
 Parses GCTX and GZ metadata files, performs filtering and data transformation.
 """
 
+from typing import Optional, Dict, Tuple
 import pandas as pd
 import numpy as np
 import gzip
 import logging
 import config
 from logger import setup_logger, log_filtering_stats, log_data_shape
+from exceptions import DataExtractionError, DataValidationError
 
 
 logger = setup_logger(__name__)
 
 
-def parse_gctx_file(filepath, chunk_size=10000):
+def parse_gctx_file(filepath: str, chunk_size: int = 10000) -> pd.DataFrame:
     """
     Parse GCTX file in chunks for memory efficiency.
     GCTX format contains a header line followed by tab-separated data.
@@ -28,7 +30,7 @@ def parse_gctx_file(filepath, chunk_size=10000):
     
     Raises:
         FileNotFoundError: If file does not exist.
-        ValueError: If file format is invalid.
+        DataExtractionError: If file format is invalid.
     """
     logger.info(f"Parsing GCTX file: {filepath}")
     
@@ -46,13 +48,13 @@ def parse_gctx_file(filepath, chunk_size=10000):
     
     except FileNotFoundError:
         logger.error(f"GCTX file not found: {filepath}")
-        raise
+        raise FileNotFoundError(f"GCTX file not found: {filepath}")
     except Exception as e:
         logger.error(f"Error parsing GCTX file: {e}")
-        raise ValueError(f"Invalid GCTX file format: {e}")
+        raise DataExtractionError(f"Invalid GCTX file format: {e}")
 
 
-def parse_metadata_file(filepath, compression='gzip'):
+def parse_metadata_file(filepath: str, compression: str = 'gzip') -> pd.DataFrame:
     """
     Parse metadata files (gene, signature, or perturbagen info).
     
@@ -65,6 +67,7 @@ def parse_metadata_file(filepath, compression='gzip'):
     
     Raises:
         FileNotFoundError: If file does not exist.
+        DataExtractionError: If parsing fails.
     """
     logger.info(f"Parsing metadata file: {filepath}")
     
@@ -80,13 +83,14 @@ def parse_metadata_file(filepath, compression='gzip'):
     
     except FileNotFoundError:
         logger.error(f"Metadata file not found: {filepath}")
-        raise
+        raise FileNotFoundError(f"Metadata file not found: {filepath}")
     except Exception as e:
         logger.error(f"Error parsing metadata file: {e}")
-        raise
+        raise DataExtractionError(f"Error parsing metadata file: {e}")
 
 
-def filter_by_z_score(data, z_score_col='z_score', threshold=None):
+def filter_by_z_score(data: pd.DataFrame, z_score_col: str = 'z_score', 
+                      threshold: Optional[float] = None) -> pd.DataFrame:
     """
     Filter genetic signatures by Z-score to remove biological noise.
     Keeps significant hits (|Z| >= threshold).
@@ -98,9 +102,15 @@ def filter_by_z_score(data, z_score_col='z_score', threshold=None):
     
     Returns:
         pd.DataFrame: Filtered data.
+        
+    Raises:
+        DataValidationError: If Z-score column not found.
     """
     if threshold is None:
         threshold = config.Z_SCORE_THRESHOLD
+    
+    if z_score_col not in data.columns:
+        raise DataValidationError(f"Column '{z_score_col}' not found in data")
     
     original_count = len(data)
     
@@ -113,7 +123,7 @@ def filter_by_z_score(data, z_score_col='z_score', threshold=None):
     return filtered_data
 
 
-def validate_data_quality(data, description="Data"):
+def validate_data_quality(data: pd.DataFrame, description: str = "Data") -> Dict:
     """
     Validate data quality and report issues.
     
@@ -123,7 +133,13 @@ def validate_data_quality(data, description="Data"):
     
     Returns:
         dict: Validation report with statistics.
+        
+    Raises:
+        DataValidationError: If critical quality issues found.
     """
+    if data is None or len(data) == 0:
+        raise DataValidationError(f"{description} is empty or None")
+    
     report = {
         'shape': data.shape,
         'null_counts': data.isnull().sum(),
@@ -139,14 +155,20 @@ def validate_data_quality(data, description="Data"):
     logger.info(f"  Memory: {report['memory_mb']:.2f} MB")
     
     # Check for concerning null percentages
-    high_null_cols = report['null_percentage'][report['null_percentage'] > 50]
+    high_null_cols = report['null_percentage'][report['null_percentage'] > config.MIN_NON_NULL_THRESHOLD * 100]
     if len(high_null_cols) > 0:
-        logger.warning(f"Columns with >50% null values: {high_null_cols.to_dict()}")
+        logger.warning(f"Columns with >{config.MIN_NON_NULL_THRESHOLD * 100}% null values: {high_null_cols.to_dict()}")
+    
+    # Check for excessive duplicates
+    duplicate_ratio = report['duplicates'] / len(data) if len(data) > 0 else 0
+    if duplicate_ratio > config.MAX_DUPLICATE_THRESHOLD:
+        logger.warning(f"High duplicate ratio: {duplicate_ratio:.2%}")
     
     return report
 
 
-def melt_wide_to_long(data, id_vars, var_name='gene', value_name='z_score'):
+def melt_wide_to_long(data: pd.DataFrame, id_vars: list, 
+                      var_name: str = 'gene', value_name: str = 'z_score') -> pd.DataFrame:
     """
     Transform wide data (genes as columns) to long format (one row per gene per compound).
     
@@ -158,7 +180,15 @@ def melt_wide_to_long(data, id_vars, var_name='gene', value_name='z_score'):
     
     Returns:
         pd.DataFrame: Long format data.
+        
+    Raises:
+        DataValidationError: If id_vars not found in data.
     """
+    # Validate id_vars exist
+    missing_cols = [col for col in id_vars if col not in data.columns]
+    if missing_cols:
+        raise DataValidationError(f"Columns not found in data: {missing_cols}")
+    
     logger.info(f"Melting data from wide to long format...")
     original_shape = data.shape
     
@@ -170,7 +200,8 @@ def melt_wide_to_long(data, id_vars, var_name='gene', value_name='z_score'):
     return melted
 
 
-def remove_duplicates(data, subset=None, keep='first'):
+def remove_duplicates(data: pd.DataFrame, subset: Optional[list] = None, 
+                      keep: str = 'first') -> pd.DataFrame:
     """
     Remove duplicate rows based on specified columns.
     
@@ -181,7 +212,15 @@ def remove_duplicates(data, subset=None, keep='first'):
     
     Returns:
         pd.DataFrame: Data with duplicates removed.
+        
+    Raises:
+        DataValidationError: If subset columns not found.
     """
+    if subset:
+        missing_cols = [col for col in subset if col not in data.columns]
+        if missing_cols:
+            raise DataValidationError(f"Columns not found in data: {missing_cols}")
+    
     original_count = len(data)
     deduplicated = data.drop_duplicates(subset=subset, keep=keep)
     
@@ -190,7 +229,7 @@ def remove_duplicates(data, subset=None, keep='first'):
     return deduplicated
 
 
-def create_compound_metadata(pert_info_data, gene_data):
+def create_compound_metadata(pert_info_data: pd.DataFrame, gene_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     """
     Create compound metadata table from perturbagen info.
     
@@ -200,12 +239,21 @@ def create_compound_metadata(pert_info_data, gene_data):
     
     Returns:
         pd.DataFrame: Compound metadata with key fields.
+        
+    Raises:
+        DataValidationError: If required columns missing.
     """
     logger.info("Creating compound metadata table...")
+    
+    if pert_info_data is None or len(pert_info_data) == 0:
+        raise DataValidationError("Perturbagen data is empty or None")
     
     # Select relevant columns (customize based on actual file structure)
     relevant_cols = [col for col in ['pert_iname', 'moa', 'target', 'canonical_smiles', 'pubchem_cid'] 
                      if col in pert_info_data.columns]
+    
+    if 'pert_iname' not in relevant_cols:
+        raise DataValidationError("Required column 'pert_iname' not found in perturbagen data")
     
     metadata = pert_info_data[relevant_cols].drop_duplicates(subset=['pert_iname'])
     
@@ -215,8 +263,9 @@ def create_compound_metadata(pert_info_data, gene_data):
     return metadata
 
 
-def save_processed_data(compound_data, signature_data, 
-                       compound_path=None, signature_path=None):
+def save_processed_data(compound_data: pd.DataFrame, signature_data: pd.DataFrame, 
+                       compound_path: Optional[str] = None, 
+                       signature_path: Optional[str] = None) -> None:
     """
     Save processed data to CSV files.
     
@@ -225,16 +274,28 @@ def save_processed_data(compound_data, signature_data,
         signature_data (pd.DataFrame): Genetic signatures.
         compound_path (str): Path for compound CSV. Defaults to config value.
         signature_path (str): Path for signature CSV. Defaults to config value.
+        
+    Raises:
+        DataValidationError: If data is empty.
     """
+    if compound_data is None or len(compound_data) == 0:
+        raise DataValidationError("Compound data is empty")
+    if signature_data is None or len(signature_data) == 0:
+        raise DataValidationError("Signature data is empty")
+    
     if compound_path is None:
         compound_path = config.COMPOUND_METADATA_CSV
     if signature_path is None:
         signature_path = config.GENETIC_SIGNATURES_CSV
     
-    logger.info(f"Saving compound metadata to {compound_path}")
-    compound_data.to_csv(compound_path, index=False)
-    logger.info(f"✓ Saved {len(compound_data)} compound records")
-    
-    logger.info(f"Saving genetic signatures to {signature_path}")
-    signature_data.to_csv(signature_path, index=False)
-    logger.info(f"✓ Saved {len(signature_data)} signature records")
+    try:
+        logger.info(f"Saving compound metadata to {compound_path}")
+        compound_data.to_csv(compound_path, index=False)
+        logger.info(f"✓ Saved {len(compound_data)} compound records")
+        
+        logger.info(f"Saving genetic signatures to {signature_path}")
+        signature_data.to_csv(signature_path, index=False)
+        logger.info(f"✓ Saved {len(signature_data)} signature records")
+    except Exception as e:
+        logger.error(f"Error saving processed data: {e}")
+        raise DataExtractionError(f"Failed to save processed data: {e}")
