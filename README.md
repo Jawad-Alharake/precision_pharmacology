@@ -1,48 +1,50 @@
-# Precision Pharmacology: Automated Molecular Identification
+# Precision Pharmacology
 
-## 🧬 Project Overview
-The "Precision Pharmacology" pipeline is an end-to-end data science and data engineering project designed to accelerate drug repurposing. Mining the Broad Institute's massive LINCS L1000 Dataset (over 1 million genetic interactions), this project architected a local relational database to isolate highly specific, non-toxic "Precision Leads" that reverse disease signatures. An automated web scraper dynamically queries global medical literature to verify the Intellectual Property (IP) status and research maturity of the discovered compounds. Finally, the pipeline conducts a temporal pharmacodynamic analysis to classify these finalists into distinct clinical profiles (e.g., acute vs. chronic treatments), providing a complete, investor-ready triage report.
+An end-to-end data engineering pipeline for drug repurposing. Uses Python and SQL to mine 1M+ LINCS genetic signatures, isolating precision leads. Features temporal pharmacodynamics to classify clinical profiles and a custom PubMed web scraper to verify the commercial novelty and IP status of discovered compounds.
 
-## 🛠️ Technology Stack
-* **Data Engineering:** Python, Pandas, Numpy
-* **Database Architecture:** SQLite, Relational Schemas
-* **Web Scraping & Automation:** Requests, BeautifulSoup
-* **Data Visualization:** Matplotlib, Seaborn
+Key improvements and best-practices added to this repository:
 
-## 📂 Project Execution Instructions
+- Centralized configuration: `config.py`
+- `.gitignore` tuned for large data files and notebooks
+- `requirements.txt` pinning common runtime and dev dependencies
+- Automated CI: GitHub Actions workflow (`.github/workflows/ci.yml`) to run tests and lint checks
+- Pre-commit hooks: Black, isort, flake8 and nbstripout configured to keep notebooks clean
+- Tests: Lightweight smoke tests that validate repository structure and configuration
+- Tools: `tools/clean_notebooks.py` utility to strip outputs from notebooks safely
+- Documentation: `CONTRIBUTING.md` and other guidance files
 
-### 1) Environment Setup & Data Download
-Due to GitHub's file size limits, the raw datasets are not hosted in this repository. Download the four primary datasets listed below from the NCBI GEO repository (Accession: **GSE92742**). Ensure the following files are placed directly into the exact same directory as your `.ipynb` notebooks:
+Quick start
+----------
 
-* `GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx` *(Note: Ensure this is extracted if downloaded as an archive)*
-* `GSE92742_Broad_LINCS_gene_info.txt.gz`
-* `GSE92742_Broad_LINCS_sig_info.txt.gz`
-* `GSE92742_Broad_LINCS_pert_info.txt.gz` *(Note: Ensure this is extracted if downloaded as an archive)*
+1. Clone the repository
 
-### 2) Phase 1: Data Extraction & Dimensionality Reduction
-* **Action:** Run the first notebook `phase_1.ipynb`.
-* **Process:** Parses the massive `.gctx` and `.gz` metadata files, melts the wide data into a long format, and filters out biological noise (Z-scores between -2.0 and 2.0).
-* **Expected Output:** Upon successful completion, two new CSV files will be generated in your directory: `lincs_compound_metadata.csv` and `lincs_genetic_signatures.csv`.
+   git clone https://github.com/Jawad-Alharake/precision_pharmacology.git
+   cd precision_pharmacology
 
-### 3) Phase 2: Relational Database Architecture
-* **Action:** Run the second notebook `phase_2.ipynb`.
-* **Process:** Ingests the cleaned CSVs and builds a fast, relational SQLite database, linking the biological identity of drugs to their genetic impact.
-* **Expected Output:** A new database file named `precision_pharmacology.db` will appear in your directory.
+2. Create a virtual environment and install dependencies
 
-### 4) Phase 3: Business Analytics & Insight Generation
-* **Action:** Run the third notebook `phase_3.ipynb`.
-* **Process:** The SQL engine queries the database to identify our top drug candidates based on potency and surgical specificity (Precision vs. Power). Generates a heat map visualization.
-* **Expected Output:** Two new CSV files will be exported: `top_10_lead_summary.csv` (for executives) and `top_10_detailed_gene_hits.csv` (for the lab).
+   python -m venv .venv
+   source .venv/bin/activate   # on Linux/macOS
+   .\.venv\Scripts\activate  # on Windows
+   pip install -r requirements.txt
 
-### 5) Phase 4: Literature Footprint & Risk Assessment
-* **Action:** Run the fourth notebook `phase_4.ipynb`.
-* **Process:** Deploys a custom BeautifulSoup bot to automatically scrape PubMed. It extracts publication data to prove whether the discovered leads are "Established Therapies" or untapped "Novel IP."
-* **Expected Output:** Generates a final comparative bar chart and outputs the ultimate project deliverable: `final_executive_lead_report.csv`.
+3. Run lightweight tests
 
-### 6) Phase 5: Temporal Pharmacodynamics & Clinical Triaging
-* **Action:** Run the fifth and final notebook `phase_5.ipynb`.
-* **Process:** Integrates time-series metadata (6h vs. 24h) to evaluate how drug efficacy and specificity mature over time. Classifies the top 10 precision leads into distinct clinical profiles (e.g., "Rapid Responders" for acute interventions vs. "Cascade Inducers" for systemic resets).
-* **Expected Output:** Generates an Executive Triage Report alongside two high-end visualizations: a Potency Maturation bar chart and a Biological Cascade slope graph.
+   pytest -q
 
-## ⚖️ Data Provenance & Licensing
-All biological data used in this project is sourced from the Library of Integrated Network-based Cellular Signatures (LINCS), generated by the Broad Institute and hosted by the NIH's National Center for Biotechnology Information (NCBI). It is open-access and publicly available for research purposes.
+4. Clean notebooks (optional but recommended before committing)
+
+   python tools/clean_notebooks.py
+
+Notes about the notebooks
+-------------------------
+- The notebooks (phase_1..phase_5) operate on very large LINCS GCTX files (data files are ~20GB). Do not attempt to run them on environments without sufficient disk and memory.
+- For reproducible runs, download files listed in `data_sources.txt` and place them alongside the notebooks or update file paths in `config.py`.
+
+Contributing
+------------
+See CONTRIBUTING.md for details on how to contribute and submit pull requests.
+
+License
+-------
+This repository is released under the MIT License. See LICENSE for details.
