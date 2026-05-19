@@ -3,13 +3,16 @@ Phase 4: Literature Footprint & Risk Assessment
 Web scraper for PubMed to validate novelty and IP status of discovered compounds.
 """
 
+from typing import Dict, List, Optional
 import requests
 import logging
 import time
+from urllib.parse import quote
 from bs4 import BeautifulSoup
 import pandas as pd
 import config
 from logger import setup_logger
+from exceptions import ScraperError
 
 
 logger = setup_logger(__name__)
@@ -18,7 +21,8 @@ logger = setup_logger(__name__)
 class PubMedScraper:
     """Scraper for PubMed literature data with retry logic and rate limiting."""
     
-    def __init__(self, base_url=None, timeout=None, retry_count=None, retry_delay=None):
+    def __init__(self, base_url: Optional[str] = None, timeout: Optional[int] = None, 
+                 retry_count: Optional[int] = None, retry_delay: Optional[int] = None):
         """
         Initialize PubMed scraper.
         
@@ -36,7 +40,15 @@ class PubMedScraper:
         self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Precision Pharmacology Pipeline)'})
         logger.info("PubMed scraper initialized")
     
-    def search_compound(self, compound_name, max_results=10):
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()
+    
+    def search_compound(self, compound_name: str, max_results: int = 10) -> Dict:
         """
         Search for a compound on PubMed.
         
@@ -45,16 +57,23 @@ class PubMedScraper:
             max_results (int): Maximum number of results to retrieve.
         
         Returns:
-            list: List of publication data dictionaries.
+            dict: Publication data dictionary.
+            
+        Raises:
+            ScraperError: If search fails after retries.
         """
+        if not compound_name or not isinstance(compound_name, str):
+            raise ScraperError("Compound name must be a non-empty string")
+        
         logger.info(f"Searching PubMed for compound: {compound_name}")
         
-        results = []
         retry = 0
         
         while retry < self.retry_count:
             try:
-                search_url = f"{self.base_url}?term={compound_name}&retmax={max_results}&rettype=json"
+                # URL encode compound name for safety
+                encoded_compound = quote(compound_name)
+                search_url = f"{self.base_url}?term={encoded_compound}&retmax={max_results}&rettype=json"
                 
                 response = self.session.get(search_url, timeout=self.timeout)
                 response.raise_for_status()
@@ -97,10 +116,9 @@ class PubMedScraper:
                         'pmids': [],
                         'status': 'error'
                     }
-        
-        return results
+                    return results
     
-    def get_publication_details(self, pmid):
+    def get_publication_details(self, pmid: str) -> Dict:
         """
         Get detailed information about a publication.
         
@@ -109,11 +127,17 @@ class PubMedScraper:
         
         Returns:
             dict: Publication details.
+            
+        Raises:
+            ScraperError: If validation fails.
         """
+        if not pmid or not isinstance(pmid, str):
+            raise ScraperError("PMID must be a non-empty string")
+        
         logger.debug(f"Fetching details for PMID: {pmid}")
         
         try:
-            url = f"{self.base_url}{pmid}/"
+            url = f"{self.base_url}{quote(pmid)}/"
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
             
@@ -148,7 +172,7 @@ class PubMedScraper:
                 'year': 'N/A'
             }
     
-    def batch_search(self, compound_list, max_results=10):
+    def batch_search(self, compound_list: List[str], max_results: int = 10) -> pd.DataFrame:
         """
         Search multiple compounds and aggregate results.
         
@@ -158,33 +182,49 @@ class PubMedScraper:
         
         Returns:
             pd.DataFrame: Aggregated search results.
+            
+        Raises:
+            ScraperError: If validation fails.
         """
+        if not compound_list or not isinstance(compound_list, list):
+            raise ScraperError("Compound list must be a non-empty list")
+        
         logger.info(f"Starting batch search for {len(compound_list)} compounds...")
         
         results = []
         
         for i, compound in enumerate(compound_list):
-            logger.info(f"Processing compound {i+1}/{len(compound_list)}: {compound}")
+            try:
+                logger.info(f"Processing compound {i+1}/{len(compound_list)}: {compound}")
+                
+                search_result = self.search_compound(compound, max_results)
+                results.append(search_result)
+                
+                # Rate limiting - be respectful to PubMed
+                time.sleep(0.5)
             
-            search_result = self.search_compound(compound, max_results)
-            results.append(search_result)
-            
-            # Rate limiting - be respectful to PubMed
-            time.sleep(0.5)
+            except Exception as e:
+                logger.warning(f"Failed to search compound '{compound}': {e}")
+                results.append({
+                    'compound': compound,
+                    'publication_count': -1,
+                    'pmids': [],
+                    'status': 'error'
+                })
         
         results_df = pd.DataFrame(results)
         logger.info(f"✓ Batch search completed. Results for {len(results_df)} compounds")
         
         return results_df
     
-    def close(self):
+    def close(self) -> None:
         """Close the session."""
         if self.session:
             self.session.close()
             logger.info("PubMed scraper session closed")
 
 
-def assess_novelty(publication_count, threshold=5):
+def assess_novelty(publication_count: int, threshold: int = 5) -> str:
     """
     Assess whether a compound is novel based on publication count.
     
@@ -198,36 +238,55 @@ def assess_novelty(publication_count, threshold=5):
     return 'novel' if publication_count < threshold else 'established'
 
 
-def generate_novelty_report(search_results_df, output_path=None):
+def generate_novelty_report(search_results_df: pd.DataFrame, 
+                           output_path: Optional[str] = None) -> pd.DataFrame:
     """
     Generate a comprehensive novelty and risk assessment report.
     
     Args:
         search_results_df (pd.DataFrame): Results from batch search.
         output_path (str): Path to save report. Defaults to config value.
+    
+    Returns:
+        pd.DataFrame: Enhanced results with novelty assessment.
+        
+    Raises:
+        ScraperError: If report generation fails.
     """
     if output_path is None:
         output_path = config.EXECUTIVE_LEAD_REPORT
     
     logger.info("Generating novelty and risk assessment report...")
     
-    # Add assessment columns
-    search_results_df['novelty_status'] = search_results_df['publication_count'].apply(assess_novelty)
-    search_results_df['risk_level'] = search_results_df['publication_count'].apply(
-        lambda x: 'LOW' if x > 50 else ('MEDIUM' if x > 10 else 'HIGH')
-    )
+    try:
+        search_results_df = search_results_df.copy()
+        
+        # Add assessment columns
+        search_results_df['novelty_status'] = search_results_df['publication_count'].apply(assess_novelty)
+        search_results_df['risk_level'] = search_results_df['publication_count'].apply(
+            lambda x: 'LOW' if x > 50 else ('MEDIUM' if x > 10 else 'HIGH')
+        )
+        
+        # Save report
+        search_results_df.to_csv(output_path, index=False)
+        logger.info(f"✓ Report saved to {output_path}")
+        
+        # Log summary
+        novel_count = (search_results_df['novelty_status'] == 'novel').sum()
+        established_count = (search_results_df['novelty_status'] == 'established').sum()
+        
+        logger.info(f"\nNovelty Report Summary:")
+        logger.info(f"  Novel compounds: {novel_count}")
+        logger.info(f"  Established compounds: {established_count}")
+        
+        if len(search_results_df) > 0:
+            valid_results = search_results_df[search_results_df['publication_count'] >= 0]
+            if len(valid_results) > 0:
+                avg_publications = valid_results['publication_count'].mean()
+                logger.info(f"  Average publications per compound: {avg_publications:.1f}")
+        
+        return search_results_df
     
-    # Save report
-    search_results_df.to_csv(output_path, index=False)
-    logger.info(f"✓ Report saved to {output_path}")
-    
-    # Log summary
-    novel_count = (search_results_df['novelty_status'] == 'novel').sum()
-    established_count = (search_results_df['novelty_status'] == 'established').sum()
-    
-    logger.info(f"\nNovelty Report Summary:")
-    logger.info(f"  Novel compounds: {novel_count}")
-    logger.info(f"  Established compounds: {established_count}")
-    logger.info(f"  Average publications per compound: {search_results_df['publication_count'].mean():.1f}")
-    
-    return search_results_df
+    except Exception as e:
+        logger.error(f"Error generating novelty report: {e}")
+        raise ScraperError(f"Report generation failed: {e}")
